@@ -1,4 +1,10 @@
-# morphOMICs_v2
+# morphOMICs_v2 (*in development*)
+
+| ❗ WARNING ❗  |
+|:------------------|
+| This repository is currently in development. ***All the codes in this repository are already usable*** however, new features will be added including: </br> - *bar re-weighting*  </br> - *bootstrapping with Sholl analysis* </br> - *bootstrapping with morphometrics calculating using L-measure* </br> - *interactive 3D plotting* |
+
+
 
 `morphOMICs_v2` is a Python package containing tools for analyzing microglia morphology using a topological data analysis approach. Note that this algorithm is designed not only for microglia applications but also for any dynamic branching structures across natural sciences.
 
