@@ -1,0 +1,282 @@
+# morphOMICs pipeline and parameter setup
+
+# sequential list of executables
+# Choices of executables: Input, Load_data, Clean_frame, Bootstrap, Persistence_Images, UMAP, Palantir, iPyVolume_plotting, Mapping, Clear_morphframe
+# This is an example of a standard morphOMICs pipeline to obtain the morphological spectrum
+Protocols = [ 
+        "Load_data",
+        "Clean_frame",
+        "Bootstrap",
+        "Persistence_Images",
+        "Clear_morphoframe", # invoke this to free up memory
+        "UMAP",
+    ]
+
+
+
+# load 3D morphological reconstructions
+[Input]
+# location of the filepath
+"data_location_filepath" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/Retina_traces_converted"
+# .swc file extension, "_corrected.swc" refers to .swc files that were corrected with NeurolandMLConverter
+"extension" = "_corrected.swc"
+# this must match the hierarchical structure of `data_location_filepath`
+"conditions" = [
+            "Region",
+            "Condition",
+            "Model",
+            "Time",
+            "Sex",
+            "Animal",
+        ]
+# this is the TMD filtration function, can either be radial_distances, or path_distances
+"barcode_filter" = "radial_distances"
+
+# this is how the variable will be called
+"morphoframe_name" = "morphoframe"
+
+# I would advise saving the loaded data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# saving chunks of the whole data (according to `separated_by`) makes it less painful if there was a problem with the file processing in the middle of running `Input`
+# this must be an element of `conditions`
+"separated_by" = "Model"
+# location where to save the data
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/_TMD_barcodes/Retina_barcodes_MF"
+# if 0, morphOMICs will automatically create a file prefix, i.e., Morphomics.PID[xxx].[barcode_filter].[separated_by]-
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+# custom loading of morphological data
+[Load_data]
+"folderpath_to_data" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/_TMD_barcodes/Retina_barcodes_MF"
+"filename_prefix" = "Morphomics.PID6789.TMD-radial_distances"
+"separated_by" = "Model"
+"conditions_to_include" = ["rd1","Cx3cr1_het","Ctrl_Iso4h","Ctrl_Iso48h","Ctrl_Kxa4h","Ctrl_Kxa48h","rd10",]
+"morphoframe_name" = "morphoframe"
+
+
+
+# criteria for cleaning the input files
+[Clean_frame]
+# if not 0, must contain the filepath to the morphoframe which will then be saved into morphoframe_name
+# otherwise, `morphoframe_name` is the morphoframe that will be cleaned up
+"morphoframe_filepath" = 0
+"morphoframe_name" = "morphoframe"
+
+# remove morphologies if the number of bars is less than the cutoff
+"barcode_size_cutoff" = 5
+# retain bars whose length satisfy a certain cutoff
+# must be an array with two elements, ["greater_than" "less_than" or "within", bar length condition (must be an array if using "within")]
+# the example below keeps bars whose length is grteater than 0, and less than 200.
+"barlength_cutoff" = [ 
+            ["less_than", 0],
+            ["greater_than", 200], 
+            ["within", [0,200]],
+            ]
+# enumerate which conditions will be merged
+# must be an array with three elements [a header of the info_frame (is an element of `Input.conditions`),
+#                                       a list of conditions that will be merged (must be an array), 
+#                                       the new name of the merged conditions]
+# if not used, comment the whole `combine_conditions` out
+"combine_conditions" = [
+    ["Model", ["Ctrl_Kxa4h", "Ctrl_Kxa48h"], "Ctrl_Kxa"],
+    ["Model", ["Ctrl_Iso4h", "Ctrl_Iso48h"], "Ctrl_Kxa"],
+    # ["Region", ["GCL", "INL"], "Other"],
+    # ["Region", ["OPL"], "OePiEl"], # here, I'm using `combine_conditions` for renaming
+]
+# enumerate restrictions
+# must be an array with three elements [a header of the info_frame (is an element of `Input.conditions`),  
+#                                       list of conditions to either drop or keep (must be an array), 
+#                                       "drop" or "keep" conditions specified]
+# if not used, comment the whole `combine_conditions` out
+"restrict_conditions" = [
+    ["Region", ["GCL"], "drop"],
+    ["Model", ["rd1","Cx3cr1_het","Ctrl_Iso","Ctrl_Kxa","rd10",], "keep"],
+]
+
+# I would advise saving the cleaned data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# location where to save the data
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/_TMD_barcodes/Retina_barcodes_MF"
+# if 0, morphOMICs will automatically create a file prefix, i.e., Morphomics.PID[xxx].[barcode_filter].Cleaned.
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+# parameters for bootstrapping
+[Bootstrap]
+# if not 0, must contain the filepath to the morphoframe
+"morphoframe_filepath" = 0
+"morphoframe_name" = "morphoframe"
+
+# must be an array with two elements [feature (one of the headers in morphoframe), "bars", "scalar" or "array"]
+"feature_to_bootstrap" = ["Barcodes", "bars"]         # bootstraps by collapsing the lists into a single list 
+# "feature_to_bootstrap" = ["Barcode_length", "scalar"] # bootstraps by taking the average
+# "feature_to_bootstrap" = ["Sholl", "array"]   
+
+
+# column name in morphoframe where the bootstrap_conditions are located
+"condition_column" = "Model"
+# conditions to bootstrap
+# if this array is empty, it will bootstrap across all conditions in the morphoframe
+"bootstrap_conditions" = [
+			"rd1",
+			"Cx3cr1_het",
+			"Ctrl_Iso",
+			"Ctrl_Kxa",
+			"rd10",
+        ]
+# which conditions combinations which bootstrapping will consider as a unique condition
+"bootstrap_resolution" = [
+            		"Region",
+            		"Model",
+            		"Time",
+                    "Sex",
+        ]
+        # bootstraps by taking the element-wise average of a NumPy array
+        
+# set the seed of the random number, for reproducibility
+"rand_seed" = 4512
+# if this is opted, N_pop will be calculated as ratio*(total number of morphologies in a given condition combination)
+# if 0, you must input N_pop
+"ratio" = 0
+# number of morphologies to take averages of
+"N_pop" = 10
+# number of bootstrap samples to create
+"N_samples" = 500
+
+# where the bootstrapped morphoframes will be stored
+"bootstrapframe_name" = "morphoframe"
+
+# I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# path to folder where to store bootstrapped conditions
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes_MF/"
+# if 0, morphOMICs will automatically create a file prefix, i.e., Morphomics.PID[xxx].[barcode_filter].Bootstrap.
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+# parameters for calculating persistence images
+[Persistence_Images]
+# if not 0, must contain the filepath to the bootstrapframe
+"morphoframe_filepath" = 0
+"morphoframe_name" = "morphoframe"
+
+# paramteres for calculating persistence images
+# spread of the Gaussian
+"bw_method" = 0.5
+# how to normalize the persistence image, can be "sum" or "max"
+"norm_method" = "sum"
+# constraints to the axes limits
+"xlims" = [0, 200]
+"ylims" = [0, 200]
+# if not 0, must point to the location containing the weights to each bar
+"barcode_weight" = 0
+
+# I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# path to folder where to store bootstrapped conditions
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes_MF/"
+# if 0, morphOMICs will automatically create a file prefix, i.e., Morphomics.PID[xxx].[barcode_filter].Bootstrap.
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+# parameters used for calculating UMAP
+[UMAP]
+# if not 0, must contain the filepath to the bootstrapframe
+"PersistenceImages_filepath" = 0
+
+# if 0, no pixel filtering will be done
+"filter_pixels" = 1
+# if not 0, must contain the filepath to the indices of the persistence image that will be filtered
+"filteredpixelindex_filepath" = 0
+# if filteredpixedindex_filepath is not zero, this will be ignored
+"pixel_std_cutoff" = 1e-4
+
+# if 0, the persistence image array will not be initially reduced
+# do not do this if you plan to use the UMAP function for mapping
+"run_PCA" = 0
+"n_PCs" = 50
+
+# UMAP parameters
+"n_neighbors" = 300
+"min_dist" = 0.05
+"spread" = 3.0
+"random_state" = 467
+"metric" = "manhattan"
+"densmap" = 0 # zero is false
+"n_components" = 3
+
+# I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# path to folder where to store UMAP function and reduced manifold coordinates
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes_MF/"
+# if 0, morphOMICs will automatically create a file prefix
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+# parameters used for calculating Palantir
+[Palantir]
+# if not 0, must contain the filepath to the UMAP coordinates
+"X_umap_filepath" = 0
+
+# Palantir diffusion map parameters
+"n_diffusion_components" = 10
+"knn_diffusion" = 300
+"fdl_random_seed" = 54648
+
+# I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# path to folder where to store UMAP function and reduced manifold coordinates
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes_MF/"
+# if 0, morphOMICs will automatically create a file prefix
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+# parameters used for mapping novel conditions
+[Mapping]
+# !!! IMPORTANT !!!
+"F_umap_filepath" = 0
+
+# if 1, you MUST specify the location to the persistence images
+"PersistenceImages_filepath" = 0
+
+# if 1, you MUST specify the location of the filtered pixel indices before doing the UMAP of the generated phenotypic spectrum
+"filter_pixels" = 0
+"FilteredPixelIndex_filepath" = 0
+
+# if 1, you MUST specify the location of the PCA function used before doing the UMAP of the generated phenotypic spectrum
+"run_PCA" = 0
+"F_PCA_filepath" = 0
+
+# I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# path to folder where to store UMAP function and reduced manifold coordinates
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes_MF/"
+# if 0, morphOMICs will automatically create a file prefix
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+[Prepare_csv]
+# set this to zero if running Prepare_csv after running bootstrapping and UMAP reduction
+"declare_filepaths" = 1
+"UMAP_filepath" = 0
+"BootstrapInfo_filepath" = 0
+"OutputCsv_filepath" = 0
+
+
+
+[Sholl]
+"do_sholl" = true
