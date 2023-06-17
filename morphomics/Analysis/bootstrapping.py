@@ -23,24 +23,22 @@ bootstrap_methods = {
     "max_axis": lambda arr, ax: np.amin(arr, axis=ax),
 }
 
+def _bootstrap_feature(_b_frame, morphology_list, _feature, _dtype):
+    if _dtype == "bars":
+        bootstrapped_feature = _collect_bars(_b_frame[_feature], morphology_list)
+    else:
+        bootstrapped_feature = _average_over_features(np.array(_b_frame[_feature]), morphology_list, _dtype)
+    return bootstrapped_feature
+    
 
-def _collect_bars(phs, morphology_list):
-    ph_array = []
-    for phs_index in morphology_list:
-        ph_array.append(phs[phs_index])
-    collapsed = [list(pi) for p in ph_array for pi in p]
-    return collapsed
-
-
-def _average_over_features(features, morphology_list, axis=0, method="mean"):
+def _average_over_features(features, morphology_list, _dtype, method="mean"):
     _features = [features[i] for i in morphology_list]
     _features = np.array(_features)
-    feature_shape = _features.shape
 
-    if len(feature_shape) == 1:
-        collapsed = bootstrap_methods[method](_features)
-    elif len(feature_shape) > 1:
-        collapsed = bootstrap_methods["%s_axis" % method](_features, axis)
+    if _dtype == "scalar":
+        collapsed = bootstrap_methods[method](np.hstack(_features))
+    elif _dtype == "array":
+        collapsed = bootstrap_methods["%s_axis" % method](_features, 0)
     else:
         raise ValueError("Check the dimension of features...")
 
@@ -50,7 +48,7 @@ def _average_over_features(features, morphology_list, axis=0, method="mean"):
 def _collect_bars(_b_frame, morphology_list):
     pooled_bars = []
     for _idx in morphology_list:
-        pooled_bars += _b_frame.iloc[_idx]["Barcodes"]
+        pooled_bars += _b_frame.iloc[_idx]
     return pooled_bars
 
 
@@ -71,6 +69,7 @@ def _create_bootstrap_dataframe(_b_frame, _bs, morphology_idx, pooled_bars, boot
 
 def get_subsampled_population_from_infoframe(
     info_frame,
+    feature_to_bootstrap,
     condition_column,
     bootstrap_conditions,
     bootstrap_resolution,
@@ -84,6 +83,7 @@ def get_subsampled_population_from_infoframe(
 
     Args:
         info_frame (DataFrame): _description_
+        feature_to_bootstrap (list, str)
         condition_column (str): _description_
         bootstrap_conditions (list, str): _description_
         bootstrap_resolution (list, str): _description_
@@ -98,17 +98,24 @@ def get_subsampled_population_from_infoframe(
     """
     np.random.seed(rand_seed)
 
+    _feature, _dtype = feature_to_bootstrap
     assert (
-        "Barcodes" in info_frame.keys()
-    ), "There is no `Barcode` column in info_frame. Make sure that you have loaded the data properly."
-
-    _b_frame = pd.concat(
-        [
-            info_frame.loc[info_frame[condition_column] == _conds]
-            for _conds in bootstrap_conditions
-        ],
-        ignore_index=True,
-    )
+        _feature in info_frame.keys()
+    ), "There is no `%s` column in info_frame. Make sure that you have loaded the data properly."%_feature
+    assert _dtype in ['bars', 'scalar', 'array'], "%s is not a valid dtype for %s"%(_dtype, _feature)
+    
+    # if bootstrap_conditions is empty, bootstrap on all the conditions in condition_column
+    if len(bootstrap_conditions) == 0:
+        _b_frame = info_frame.copy()
+    else:    
+        _b_frame = pd.concat(
+            [
+                info_frame.loc[info_frame[condition_column] == _conds]
+                for _conds in bootstrap_conditions
+            ],
+            ignore_index=True,
+        )
+    
     _b_frame = _b_frame.loc[_b_frame["Morphologies"].notna()].reset_index(drop=True)
 
     # create the conditions for bootstrapping
@@ -134,49 +141,52 @@ def get_subsampled_population_from_infoframe(
             
         subsampled = []
         subsampled_index = []
+        
         # if N_pop >= N, calculate the average persistence image
         if N_pop >= N:
             print(
                 "The bootstrap size is greater than or equal to the original population size. Calculating the average persistence image..."
             )
-            subsampled.append(_collect_bars(_b_frame, morphology_idx))
+            subsampled.append(_bootstrap_feature(_b_frame, morphology_idx, _feature, _dtype))
+            # subsampled.append(_collect_bars(_b_frame, morphology_idx))
             subsampled_index.append(morphology_idx)
-            
-        else:
-            max_possible = N_pop
-            n = 0
-            while n <= N_samples:
-                n = comb(max_possible, N_pop)
-                max_possible += 1
-            
-            # if max_possible < N: then bootstrap
-            # else, enumerate all subsamples and subsample
-            if max_possible < N:
-                print(
-                    "Performing subsampling by random selection..."
-                )
-                for kk in np.arange(N_samples):
-                    # draw a subset of cells from the population and save the cell indices
-                    morphology_list = morphology_idx[
-                        np.sort(np.random.choice(np.arange(N), N_pop, replace=False))
-                    ]
-                    subsampled_index.append(morphology_list)
-                    
-                    # perform the averaging over the subset of cells and save
-                    pooled_bars = _collect_bars(_b_frame, morphology_list)
-                    subsampled.append(pooled_bars)
+            continue
+        
+        
+        max_possible = N_pop
+        n = 0
+        while n <= N_samples:
+            n = comb(max_possible, N_pop)
+            max_possible += 1
+        
+        # if max_possible < N: then bootstrap
+        # else, enumerate all subsamples and subsample
+        if max_possible < N:
+            print(
+                "Performing subsampling by random selection..."
+            )
+            for kk in np.arange(N_samples):
+                # draw a subset of cells from the population and save the cell indices
+                morphology_list = morphology_idx[
+                    np.sort(np.random.choice(np.arange(N), N_pop, replace=False))
+                ]
+                subsampled_index.append(morphology_list)
+                
+                # perform the averaging over the subset of cells and save
+                pooled_samples = _bootstrap_feature(_b_frame, morphology_list, _feature, _dtype)
+                subsampled.append(pooled_samples)
 
-            else:
-                print(
-                    "Enumerating all possible combinations..."
-                )
-                for _idx in combinations(np.arange(N), N_pop):
-                    morphology_list = morphology_idx[list(_idx)]
-                    subsampled_index.append(morphology_list)
-                    
-                    # perform the averaging over the subset of cells and save
-                    pooled_bars = _collect_bars(_b_frame, morphology_list)
-                    subsampled.append(pooled_bars)
+        else:
+            print(
+                "Enumerating all possible combinations..."
+            )
+            for _idx in combinations(np.arange(N), N_pop):
+                morphology_list = morphology_idx[list(_idx)]
+                subsampled_index.append(morphology_list)
+                
+                # perform the averaging over the subset of cells and save
+                pooled_samples = _bootstrap_feature(_b_frame, morphology_list, _feature, _dtype)
+                subsampled.append(pooled_samples)
 
         bootstrap_frame[_bs] = _create_bootstrap_dataframe(_b_frame, _bs, subsampled_index, subsampled, bootstrap_resolution)
         print("...done! \n")

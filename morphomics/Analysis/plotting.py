@@ -15,17 +15,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.spatial import ConvexHull, convex_hull_plot_2d
 
-try:
-    import ipyvolume as ipv
-except ImportError as exc:
-    raise ImportError(
-        "ipyvolume is not installed. " + "Please install it by doing: pip install ipyvolume"
-    ) from exc
-
-
-FAD_conditions = ["3mpos", "6mpos"]
-Ckp25_conditions = ["1w", "2w", "6w"]
-dev_conditions = ["P7", "P15", "P22"]
+import ipyvolume as ipv
 
 
 def plot_convex_hulled(
@@ -458,4 +448,97 @@ def quick_pyvol_UMAP_trajectory(_X_umap, _info_frame, _model, _regions, _cmaps):
     ipv.style.box_off()
     for _region in _regions:
         _pyvol_scatter_UMAP(_X_umap, _info_frame, _model, _region, _cmaps)
+    ipv.show()
+    
+    
+    
+# NEW FUNCTIONS FOR PLOTTING WITH IPYVOLUME
+def scatterplot_3D(_coordinates, _size, _color, _description, _alpha):
+    ipv.scatter(
+        _coordinates[:, 0],
+        _coordinates[:, 1],
+        _coordinates[:, 2],
+        size=_size,
+        color=_color,
+        marker="sphere",
+        description=_description,
+        alpha=_alpha,
+    )
+
+def scatterplot_3D_all(_coordinates):
+    scatterplot_3D(_coordinates, 1, "lightgrey", "All points", 0.3)
+
+def scatterplot_3D_conditions(
+    _coordinates, _morpho_info, _conditions, _colormap, _label_prefix=None
+):
+    if _label_prefix is not None:
+        _label_prefix = _label_prefix + "_"
+    else:
+        _label_prefix = ""
+
+    for _idx_conds in range(len(_colormap)):
+        conds = _colormap.loc[_idx_conds, _conditions]
+        color_type = _colormap.iloc[_idx_conds].Color_type
+        color = _colormap.iloc[_idx_conds].Color
+        limits = _colormap.iloc[_idx_conds].GradientLimits
+
+        query_frame = _morpho_info.copy()
+        for _conds in _conditions:
+            if conds[_conds] in _morpho_info[_conds].unique():
+                query_frame = query_frame.loc[query_frame[_conds] == conds[_conds]]
+        time_inds = query_frame.index.values
+
+        if color_type == "solid":
+            _c = color[0]
+
+        elif color_type in ["gradient_mod", "gradient_pre"]:
+            if color_type == "gradient_mod":
+                if len(color) == 1:
+                    color = ("white", color[0])
+                _colors = colors.LinearSegmentedColormap.from_list("", color)
+            else:
+                _colors = color[0]
+
+            assert (
+                "Time" in query_frame.columns
+            ), "Using color gradients. Time must be a component of `morpho_info`. Check your data!"
+
+            norm = plt.Normalize(limits[0], limits[1])
+            time_vals = np.array(query_frame.Time.str.replace("P", "")).astype("int")
+            _c = cm.get_cmap(_colors)(norm(time_vals))
+
+            assert len(_coordinates[time_inds, 0]) == len(
+                time_inds
+            ), "Something went wrong with identifying the indices containing the conditions"
+
+        else:
+            raise ValueError(
+                "`Color_type` must either be `solid`, `gradient_mod` or `gradient_pre`"
+            )
+
+        if len(time_inds) > 0:
+            scatterplot_3D(
+                _coordinates[time_inds],
+                2,
+                _c,
+                "%s%s" % (_label_prefix, "_".join(conds.values)),
+                0.7,
+            )
+            
+def scatterplot_3D_spectrum(coordinates, morpho_info, conditions, colormap, savefile=None):
+    ipv.figure(width=1920, height=1080)
+    ipv.style.box_off()
+
+    scatterplot_3D_all(coordinates)
+    scatterplot_3D_conditions(coordinates, morpho_info, conditions, colormap)
+
+    ipv.xyzlabel("UMAP 1", "UMAP 2", "UMAP 3")
+
+    if savefile is not None:
+        ipv.save(
+            "%s.html"%savefile,
+            title="Morphological spectrum",
+            offline=False,
+        )
+
     ipv.show()

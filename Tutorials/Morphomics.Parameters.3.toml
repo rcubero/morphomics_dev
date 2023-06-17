@@ -1,0 +1,145 @@
+# morphOMICs pipeline and parameter setup
+
+# sequential list of executables
+# Choices of executables: Input, Load_data, Clean_frame, Bootstrap, Persistence_Images, UMAP, 
+#                         Palantir, Plotting, Mapping, Clear_morphframe, Prepare_ReductionInfo, 
+#                         Sholl_curves, Morphometrics
+# This is an example of a standard morphOMICs pipeline to obtain the morphological spectrum
+Protocols = [
+        "Load_data",
+        "Clean_frame",
+        "Sholl_curves",
+        "Morphometrics",
+    ]
+  
+# set this if you have ran morphOMICs with this set of parameters and you want to re-do it but with the latest saved instance
+# use case: you tried running run_morphomics.py but it failed at some protocol
+load_previous_instance = false
+# set this if you want to always save last instance
+save_last_instance = true
+path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
+
+
+
+[Load_data]
+# path to where the input files are located
+"folderpath_to_data" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/_TMD_barcodes/Retina_sample"
+"filename_prefix" = "Morphomics.PID1.TMD-radial_distances"
+
+# how the input files are separated
+"separated_by" = "Model"
+"conditions_to_include" = ["Ctrl_Kxa4h","Ctrl_Kxa48h",]
+
+# dictionary key where to store the loaded data
+"morphoframe_name" = "morphoframe"
+
+
+[Clean_frame]
+# if not 0, must contain the filepath to the morphoframe which will then be saved into morphoframe_name
+# otherwise, `morphoframe_name` is the morphoframe that will be cleaned up
+"morphoframe_filepath" = 0
+"morphoframe_name" = "morphoframe"
+
+# remove morphologies if the number of bars is less than the cutoff
+"barcode_size_cutoff" = 5
+
+# retain bars whose length satisfy a certain cutoff
+# must be an array with three elements, ["greater_than" "less_than" or "within", bar length condition (must be an array if using "within"), "drop" or "keep"]
+# the example below keeps bars whose length is greater than 0, and less than 200.
+# if not used, comment the elements of `barlength_cutoff` out
+"barlength_cutoff" = [ 
+#            ["less_than", 0, "drop"],
+#            ["greater_than", 200, "drop"], 
+#            ["within", [0,200], "keep"],
+            ]
+
+# enumerate which conditions will be merged
+# must be an array with three elements [a header of the info_frame (is an element of `Input.conditions`),
+#                                       a list of conditions that will be merged (must be an array), 
+#                                       the new name of the merged conditions]
+# if not used, comment the elements of `combine_conditions` out
+"combine_conditions" = [
+    ["Model", ["Ctrl_Kxa4h", "Ctrl_Kxa48h"], "Ctrl_Kxa"]
+]
+
+# enumerate restrictions
+# must be an array with three elements [a header of the info_frame (is an element of `Input.conditions`),  
+#                                       list of conditions to either drop or keep (must be an array), 
+#                                       "drop" or "keep" conditions specified]
+# if not used, comment the elements of `restrict_conditions` out
+"restrict_conditions" = [
+#    ["Region", ["GCL"], "drop"],
+#    ["Model", ["rd1","Cx3cr1_het","Ctrl_Iso","Ctrl_Kxa","rd10",], "keep"],
+]
+
+# I would advise saving the cleaned data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+
+# location where to save the data
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/_TMD_barcodes/Retina_sample"
+
+# if 0, morphOMICs will automatically create a file prefix, i.e., Morphomics.PID[xxx].[barcode_filter].Cleaned.
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+[Sholl_curves]
+"morphoframe_name" = "morphoframe"
+"Empty_indicator" = "Barcodes"
+
+"swc_types" = 0
+"Sholl_radius" = 5
+"Sholl_colname" = "sholl_curves"
+
+# I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# path to folder where to store UMAP function and reduced manifold coordinates
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes/"
+# if 0, morphOMICs will automatically create a file prefix
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0
+
+
+
+[Morphometrics]
+"morphoframe_name" = "morphoframe"
+"Empty_indicator" = "Barcodes"
+"temp_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Tutorials/_morphOMICs_v2_Tutorials/tmp"
+"Morphometric_colname" = "morphometrics"
+"Lmeasure_functions" = [
+    ['Length', 'TotalSum'],
+    ['N_tips', 'TotalSum'],
+    ['Width', 'TotalSum'],
+    ['Height', 'TotalSum'],
+    ['Depth', 'TotalSum'],
+    ['Partition_asymmetry', 'Average'],
+    ['Bif_ampl_local', 'Average'],
+    ['Bif_ampl_local', 'Maximum'],
+    ['Bif_ampl_remote', 'Average'],
+    ['Bif_ampl_remote', 'Maximum'],
+    ['Bif_tilt_local', 'Average'],
+    ['Bif_tilt_local', 'Maximum'],
+    ['Bif_tilt_remote', 'Average'],
+    ['Bif_tilt_remote', 'Maximum'],
+    ['Bif_torque_local', 'Average'],
+    ['Bif_torque_local', 'Maximum'],
+    ['Bif_torque_remote', 'Average'],
+    ['Bif_torque_remote', 'Maximum'],
+    ['Contraction', 'Average'],
+    ['Fractal_Dim', 'Average'],
+    ['Fractal_Dim', 'Maximum'],
+    ['Branch_pathlength', 'Average'],
+    ['Branch_Order', 'Maximum'],
+    ['Terminal_degree', 'Average'],
+    ['PathDistance', 'Maximum'],
+    ['Helix', 'Maximum'],
+]
+
+# I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
+"save_data" = true
+# path to folder where to store UMAP function and reduced manifold coordinates
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes/"
+# if 0, morphOMICs will automatically create a file prefix
+# Otherwise, this will be used as the file prefix
+"file_prefix" = 0

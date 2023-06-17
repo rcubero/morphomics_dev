@@ -6,30 +6,17 @@ Author: Ryan Cubero
 import numpy as np
 import concurrent.futures
 
-
+from fa2 import ForceAtlas2
 from scipy.linalg import svd
 from scipy.spatial.distance import cdist, squareform
 from scipy.sparse import csr_matrix, find, issparse, coo_matrix
 from scipy.sparse.linalg import eigs
+import umap
 
 from morphomics.Topology import analysis
 from morphomics.utils import save_obj
 from morphomics.utils import norm_methods, scipy_metric
 from morphomics.default_parameters import defaults
-
-try:
-    from fa2 import ForceAtlas2
-except ImportError as exc:
-    raise ImportError(
-        "ForceAltas2 is not installed. " + "Please install it by doing: pip install fa2"
-    ) from exc
-    
-try:
-    import umap
-except ImportError as exc:
-    raise ImportError(
-        "UMAP is not installed. " + "Please install it by doing: pip install umap-learn"
-    ) from exc
 
 
 def _get_persistence_image_data_single(ar):
@@ -224,7 +211,7 @@ def get_distance_array(
 
 # learns coordinates of a force directed layout
 def force_directed_layout(
-    affinity_matrix, verbose=False, iterations=500, random_seed=10
+    affinity_matrix, verbose=True, iterations=500, random_seed=10
 ):
     """ "
     Function to compute force directed layout from the affinity_matrix

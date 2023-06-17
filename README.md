@@ -1,10 +1,4 @@
-# morphOMICs_v2 (*in development*)
-
-| ❗ WARNING ❗  |
-|:------------------|
-| This repository is currently in development. ***All the codes in this repository are already usable*** however, new features will be added including: </br> - *bar re-weighting*  </br> - *bootstrapping with Sholl analysis* </br> - *bootstrapping with morphometrics calculating using L-measure* </br> - *interactive 3D plotting* |
-
-
+# morphOMICs_v2
 
 `morphOMICs_v2` is a Python package containing tools for analyzing microglia morphology using a topological data analysis approach. Note that this algorithm is designed not only for microglia applications but also for any dynamic branching structures across natural sciences.
 
@@ -18,12 +12,12 @@
 
 
 # Required Dependencies
-Python : 3.8
+Python : 3.9+
 
-numpy : 1.8.1+, scipy : 0.13.3+, pickle : 4.0+, enum34 : 1.0.4+, scikit-learn : 0.19.1+, matplotlib : 3.2.0+
+numpy : 1.8.1+, scipy : 0.13.3+, pickle : 4.0+, enum34 : 1.0.4+, scikit-learn : 0.19.1+, tomli: 2.0.1+, matplotlib : 3.2.0+, ipyvolume: 0.6.1+
 
 Additional dependencies:
-umap-learn : 0.3.10+, fa2 (https://github.com/bhargavchippada/forceatlas2)
+umap-learn : 0.3.10+, morphon: 0.0.8+, pylmeasure: 0.2.0+, fa2 (https://github.com/bhargavchippada/forceatlas2)
 
 # Installation Guide
 Because morphOMICs relies on forceatlas2, which has problems with python3.9+, we will need to create a virtual environment for morphOMICs:
@@ -50,12 +44,4 @@ Once downloaded, place the extracted folder `morphomics_v2_demo` inside `morphom
 On the terminal, run
 `python3 run_morphomics.py morphomics_v2_demo/parameters/Morphomics.Parameters.1234.toml`
 
-<!-- 
-The easiest way to navigate through `MorphOMICs` is to run the `Morphomics_demo notebook`:
-  - download `demo.zip` from https://seafile.ist.ac.at/f/eb13e707041749269ff9/?dl=1
-  - unzip `demo.zip`
-  - `cd demo`
-  - `jupyter notebook`
-  - Copy the url it generates, it looks something like this: `http://127.0.0.1:8888/?token=a4d016c37e162499e17b2993e69073fac0018bd9a779b762`
-  - Open it in your browser
-  - Then open `Morphomics_demo.ipynb` -->
+You can also follow each steps in the protocol in Jupyter notebook in `Tutorials/morphOMICs_v2_Tutorial.ipynb`.

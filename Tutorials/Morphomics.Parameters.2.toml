@@ -6,11 +6,11 @@
 #                         Sholl_curves, Morphometrics
 # This is an example of a standard morphOMICs pipeline to obtain the morphological spectrum
 Protocols = [
-        "Input",
+        "Load_data",
         "Clean_frame",
         "Bootstrap",
         "Persistence_Images",
-        "UMAP",
+        "Mapping",
         "Prepare_ReductionInfo",
         "Plotting",
     ]
@@ -24,42 +24,17 @@ path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
 
 
 
-[Input]
-# filepath pointing to the parent folder containing the .swc files arranged hierarchically according to conditions
-"data_location_filepath" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/Retina_sample"
+[Load_data]
+# path to where the input files are located
+"folderpath_to_data" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/_TMD_barcodes/Retina_sample"
+"filename_prefix" = "Morphomics.PID1.TMD-radial_distances"
 
-# .swc file extension, "_corrected.swc" refers to .swc files that were corrected with NeurolandMLConverter
-"extension" = "_corrected.swc"
-
-# this must match the hierarchical structure of `data_location_filepath`
-"conditions" = [
-            "Region",
-            "Condition",
-            "Model",
-            "Time",
-            "Sex",
-            "Animal",
-        ]
-        
-# this is the TMD filtration function, can either be radial_distances, or path_distances
-"barcode_filter" = "radial_distances"
-
-# this is how the variable will be called
-"morphoframe_name" = "morphoframe"
-
-# I would advise saving the loaded data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
-"save_data" = true
-
-# saving chunks of the whole data (according to `separated_by`) makes it less painful if there was a problem with the file processing in the middle of running `Input`
-# this must be an element of `conditions`
+# how the input files are separated
 "separated_by" = "Model"
+"conditions_to_include" = ["Ctrl_Kxa4h","Ctrl_Kxa48h",]
 
-# location where to save the data
-"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Data/_TMD_barcodes/Retina_sample"
-
-# if 0, morphOMICs will automatically create a file prefix, i.e., Morphomics.PID[xxx].[barcode_filter].[separated_by]-
-# Otherwise, this will be used as the file prefix
-"file_prefix" = 0
+# dictionary key where to store the loaded data
+"morphoframe_name" = "morphoframe"
 
 
 [Clean_frame]
@@ -128,11 +103,7 @@ path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
 # conditions to bootstrap
 # if this array is empty, it will bootstrap across all conditions in the morphoframe
 "bootstrap_conditions" = [
-#            "rd1",
-#            "Cx3cr1_het",
-#            "Ctrl_Iso",
-            "Ctrl_Kxa",
-#            "rd10",
+
         ]
         
 
@@ -140,7 +111,6 @@ path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
 "bootstrap_resolution" = [
                     "Region",
                     "Model",
-                    "Sex",
         ]
         
         
@@ -155,7 +125,7 @@ path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
 # set this to 1 if you don't want to perform bootstrapping
 "N_pop" = 15
 # number of bootstrap samples to create
-"N_samples" = 500
+"N_samples" = 1000
 
 
 # where the bootstrapped morphoframes will be stored
@@ -199,39 +169,25 @@ path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
 "file_prefix" = 0
 
 
-[UMAP]
-# if not 0, must contain the filepath to the bootstrapframe
+[Mapping]
+# !!! IMPORTANT !!!
+"F_umap_filepath" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_sample/Morphomics.PID1.Cleaned.UMAP-UMAPfunction3D.pkl"
+
+# if not 0, you MUST specify the location to the persistence images
 "PersistenceImages_filepath" = 0
 
-
-# if 0, no pixel filtering will be done
+# if 1, you MUST specify the location of the filtered pixel indices before doing the UMAP of the generated phenotypic spectrum
 "filter_pixels" = 1
-# if not 0, must contain the filepath to the indices of the persistence image that will be filtered
-"filteredpixelindex_filepath" = 0
-# if filteredpixedindex_filepath is not zero, this will be ignored
-"pixel_std_cutoff" = 1e-4
+"FilteredPixelIndex_filepath" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_sample/Morphomics.PID1.Cleaned.UMAP-FilteredIndex.pkl"
 
-
-# if 0, the persistence image array will not be initially reduced
-# do not do this if you plan to use the UMAP function for mapping
+# if 1, you MUST specify the location of the PCA function used before doing the UMAP of the generated phenotypic spectrum
 "run_PCA" = 0
-"n_PCs" = 50
-
-
-# UMAP parameters
-"n_neighbors" = 300
-"min_dist" = 0.05
-"spread" = 3.0
-"random_state" = 34151
-"metric" = "manhattan"
-"densmap" = 0 # zero is false
-"n_components" = 3
-
+"F_PCA_filepath" = 0
 
 # I would advise saving the data; value is either `true` or `false` (warning: take note that all the letters are in lower case)
 "save_data" = true
 # path to folder where to store UMAP function and reduced manifold coordinates
-"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_sample/"
+"save_folder" = "/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_barcodes"
 # if 0, morphOMICs will automatically create a file prefix
 # Otherwise, this will be used as the file prefix
 "file_prefix" = 0
@@ -259,9 +215,8 @@ path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
 # else, you can either supply the ReductionInfo_filepath, 
 # or if you want to infer the manifold coordinates and morphoinfo_frame from Protocol instance, supply any character other than '0'
 "ReductionInfo_filepath" = [
+"/media/drive_siegert/RyCu/Projects/TMD/_Results/Retina_Morphomics/Retina_sample/Morphomics.PID1.Cleaned.ReductionInfo.csv",
 "infer",
-# reductioninfo_filepath2,
-# reductioninfo_filepath3,
 ]
 "coordinate_axisnames" = "UMAP"
 
@@ -274,28 +229,25 @@ path_to_last_instance = "/media/drive_siegert/RyCu/Projects/TMD/_Data/tmp/"
 "Coordinate_filepath" = [ 
 # coordinate_filepath1,
 # coordinate_filepath2,
-# coordinate_filepath3,
 ]
 # If these are not 0, must point to the location of the morpho_infoframe that corresponds to each element of `Coordinate_filepath`
 "MorphoInfo_filepath" = [ 
 # morphoinfo_filepath1,
 # morphoinfo_filepath2,
-# morphoinfo_filepath3,
 ]
 
 # Location to the color mapping that will be used
 # 
 "colormap_filepath" = [
-    "/media/drive_siegert/RyCu/Projects/TMD/_Tutorials/_morphOMICs_v2/colormap.1.csv",
-# colapmap_filepath2,
+    "/media/drive_siegert/RyCu/Projects/TMD/_Tutorials/_morphOMICs_v2_Tutorials/colormap.1.csv",
+    "/media/drive_siegert/RyCu/Projects/TMD/_Tutorials/_morphOMICs_v2_Tutorials/colormap.2.csv",
 # colapmap_filepath3,
 ]
 
 # Must correspond to each element in `Coordinate_filepath`
 label_prefixes = [
-    "Sample"
-# label_prefix2,
-# label_prefix3,
+    "SexSpecific",
+    "NonSexSpecific",
 ]
 
 # If you need to substitute the name of a condition in morpho_infoframe, use this
@@ -308,7 +260,6 @@ label_prefixes = [
 #        ["Model", "Cx3cr1_hom",  "Development"], 
 #    ],
 #   [ substitutions for morphoinfo_filepath2 ],
-#   [ substitutions for morphoinfo_filepath3 ],
 ]
 
 # Trigger to show the interactive plot
