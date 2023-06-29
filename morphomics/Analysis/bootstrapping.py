@@ -150,6 +150,9 @@ def get_subsampled_population_from_infoframe(
             subsampled.append(_bootstrap_feature(_b_frame, morphology_idx, _feature, _dtype))
             # subsampled.append(_collect_bars(_b_frame, morphology_idx))
             subsampled_index.append(morphology_idx)
+
+            bootstrap_frame[_bs] = _create_bootstrap_dataframe(_b_frame, _bs, subsampled_index, subsampled, bootstrap_resolution)
+            print("...done! \n")
             continue
         
         
